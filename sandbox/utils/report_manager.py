@@ -14,9 +14,9 @@ def build_report_manager(opt):
     # else:
     #     writer = None
 
-    report_mgr = ReportMgr(opt.report_every, start_time=-1,
+    report_mgr = ReportMgr(opt.report_every, start_time=-1)
                         #    tensorboard_writer=writer
-                           )
+                           
     return report_mgr
 
 
@@ -89,9 +89,8 @@ class ReportMgrBase(object):
 
 
 class ReportMgr(ReportMgrBase):
-    def __init__(self, report_every, start_time=-1., 
+    def __init__(self, report_every, start_time=-1.):
                 #tensorboard_writer=None
-                ):
         """
         A report manager that writes statistics on standard output as well as
         (optionally) TensorBoard

@@ -277,8 +277,8 @@ def train_opts(parser):
     
     # logging
     group = parser.add_argument_group('Logging')
-    group.add_argument('-report_every', type=int, default=100000,
-                       help="Report status every this many sentences")
+    group.add_argument('-report_every', type=int, default=50,
+                       help="Print stats at this interval.")
     group.add_argument('-log_file', type=str, default="",
                        help="Output logs to a file under this path.")
 
