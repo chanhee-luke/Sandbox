@@ -6,7 +6,7 @@ from torch.nn.init import xavier_uniform_
 
 import sandbox.input as inputters
 import sandbox.modules
-from sandbox.network.encoder import RNNEncoder, RNNLayer
+from sandbox.network.encoder import RNNEncoder, RNNLayer, vanillaRNNEncoder
 
 from sandbox.network.decoder import InputFeedRNNDecoder, StdRNNDecoder
 
@@ -59,7 +59,10 @@ def build_encoder(opt, embeddings):
         embeddings (Embeddings): vocab embeddings for this encoder.
     """
     # "rnn"
-    return RNNEncoder(opt.rnn_type, opt.rnn_size, opt.enc_layers, opt.dropout, embeddings)
+    if opt.exp_RNNlayer:
+        return RNNEncoder(opt.rnn_type, opt.rnn_size, opt.enc_layers, opt.dropout, embeddings)
+    else:
+        return vanillaRNNEncoder(opt.rnn_type, opt.rnn_size, opt.enc_layers, opt.dropout, embeddings)
 
 def build_decoder(opt, embeddings):
     """

@@ -62,6 +62,7 @@ class RNNLayer(EncoderBase):
     """
         custom RNN layer that merges output if O_t + O_(t-1) > packet length
         #TODO add vocab lookup and token merge
+        #TODO pack sequence
     """
     def __init__(self, rnn_type, hidden_size, n_layers, dropout, embedding=None):
         super(RNNLayer, self).__init__()
@@ -167,19 +168,14 @@ class vanillaRNNEncoder(EncoderBase):
             packed_emb = pack(embedded, lengths)
 
         #embedded = [src sent len, batch size, emb dim]
-        print("orig emb size",embedded.size())
-        print("after packed size",packed_emb[0].size(), packed_emb[1].size())
         memory_bank, encoder_final = self.rnn(packed_emb)
         #outputs = [src sent len, batch size, hid dim * n directions]
         #hidden = [n layers * n directions, batch size, hid dim]
         #cell = [n layers * n directions, batch size, hid dim]
         
         #outputs are always from the top hidden layer
-        print(memory_bank)
-        print(memory_bank[0].size(), memory_bank[1].size())
 
         if lengths is not None and not self.no_pack_padded_seq:
             memory_bank = unpack(memory_bank)[0]
-        print(memory_bank[0].size(), memory_bank[1].size())
 
         return encoder_final, memory_bank

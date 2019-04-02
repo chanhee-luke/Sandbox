@@ -7,6 +7,9 @@ def model_opts(parser):
     These options are passed to the construction of the model.
     Be careful with these as they will be used during translation.
     """
+    group = parser.add_argument_group('Model: Experiment')
+    group.add_argument('-exp_RNNlayer', action='store_true',
+                        help="Turn on experimental RNNlayer")
 
     # Embedding Options
     group = parser.add_argument_group('Model: Embeddings')
