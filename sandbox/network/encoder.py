@@ -59,7 +59,7 @@ class EncoderBase(nn.Module):
         """
         raise NotImplementedError
 
-class RNNLayer(EncoderBase):
+class RNNLayer(nn.Module):
     """
         custom RNN layer that merges output if O_t + O_(t-1) > packet length
         #TODO add vocab lookup and token merge
@@ -71,15 +71,15 @@ class RNNLayer(EncoderBase):
 
         assert embedding != None
         self.hidden_size = hidden_size
-        self.embedding = embedding
-        self.input_size = self.embedding.embedding_size
+        self.input_size = embedding.embedding_size
         self.rnnCell = nn.RNNCell(self.input_size, self.hidden_size)
 
-    def forward(self, src, lengths=None):
+    def forward(self, src, embedding, lengths=None):
 
-        embedded = self.embedding(src)
+        embedded = embedding(src)
         assert embedded.size(0) == lengths[0]                           # sanity check
         time_steps = embedded.size(0)                                   # get time step from embed
+        #print(embedded.size())
         outputs = []
         hidden = None
         for t in range(time_steps):
@@ -120,15 +120,15 @@ class RNNEncoder(EncoderBase):
         self._check_args(src, lengths)
         #src = [src sent len, batch size]
 
-        layer_final, outputs = self.rnnLayer(src, lengths)
+        layer_final, outputs = self.rnnLayer(src, self.embedding, lengths)
         # print(layer_final.size())
         # print(outputs.size())
         layer_in = layer_final.expand(self.n_layers, *layer_final.size()).contiguous()
         # print("new layer size is ", layer_in.size())
         #embedded = [src sent len, batch size, emb dim]
         cell_n = layer_in.new_zeros(*layer_in.size(), requires_grad=False).contiguous()
-
-        memory_bank, encoder_final = self.rnn(outputs, (layer_in, cell_n))
+        #print(outputs[1])
+        memory_bank, encoder_final = self.rnn(outputs)
 
         #outputs = [src sent len, batch size, hid dim * n directions]
         #hidden = [n layers * n directions, batch size, hid dim]
