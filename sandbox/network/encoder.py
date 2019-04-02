@@ -61,6 +61,7 @@ class EncoderBase(nn.Module):
 class RNNLayer(EncoderBase):
     """
         custom RNN layer that merges output if O_t + O_(t-1) > packet length
+        #TODO add vocab lookup and token merge
     """
     def __init__(self, rnn_type, hidden_size, n_layers, dropout, embedding=None):
         super(RNNLayer, self).__init__()
@@ -88,7 +89,6 @@ class RNNLayer(EncoderBase):
         outputs = torch.stack(outputs)
         return layer_final, outputs                                             
 
-# New RNN encoder that does not pack and has extra RNN layer
 class RNNEncoder(EncoderBase):
     ''' 
         rnn encoder with extra layer
@@ -118,10 +118,12 @@ class RNNEncoder(EncoderBase):
         layer_final, outputs = self.rnnLayer(src, lengths)
         # print(layer_final.size())
         # print(outputs.size())
-        layer_in = layer_final.expand(self.n_layers, *layer_final.size())
+        layer_in = layer_final.expand(self.n_layers, *layer_final.size()).contiguous()
         # print("new layer size is ", layer_in.size())
         #embedded = [src sent len, batch size, emb dim]
-        memory_bank, encoder_final = self.rnn(outputs, (layer_in, layer_in.new_zeros(*layer_in.size(), requires_grad=False)))
+        cell_n = layer_in.new_zeros(*layer_in.size(), requires_grad=False).contiguous()
+
+        memory_bank, encoder_final = self.rnn(outputs, (layer_in, cell_n))
 
         #outputs = [src sent len, batch size, hid dim * n directions]
         #hidden = [n layers * n directions, batch size, hid dim]
