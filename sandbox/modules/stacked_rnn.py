@@ -19,9 +19,11 @@ class StackedLSTM(nn.Module):
             input_size = rnn_size
 
     def forward(self, input_feed, hidden):
+
         h_0, c_0 = hidden
         h_1, c_1 = [], []
         for i, layer in enumerate(self.layers):
+            #print("n number times")
             h_1_i, c_1_i = layer(input_feed, (h_0[i], c_0[i]))
             input_feed = h_1_i
             if i + 1 != self.num_layers:

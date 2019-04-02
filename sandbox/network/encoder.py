@@ -1,13 +1,16 @@
-#  encoder
-
+"""
+Vanilla RNN encoder, supports RNN|LSTM
+"""
 from __future__ import division
 
+import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence as pack
 from torch.nn.utils.rnn import pad_packed_sequence as unpack
 
 from sandbox.utils.misc import aeq
-
+from torch.autograd import Variable
+from torch.nn.functional import pad
 
 class EncoderBase(nn.Module):
     """
@@ -55,8 +58,85 @@ class EncoderBase(nn.Module):
         """
         raise NotImplementedError
 
-# vanilla rnn encoder, supports RNN|lstm
+class RNNLayer(EncoderBase):
+    """
+        custom RNN layer that merges output if O_t + O_(t-1) > packet length
+    """
+    def __init__(self, rnn_type, hidden_size, n_layers, dropout, embedding=None):
+        super(RNNLayer, self).__init__()
+
+        assert embedding != None
+        self.hidden_size = hidden_size
+        self.embedding = embedding
+        self.input_size = self.embedding.embedding_size
+        self.rnnCell = nn.RNNCell(self.input_size, self.hidden_size)
+
+    def forward(self, src, lengths=None):
+        
+        embedded = self.embedding(src)
+        assert embedded.size(0) == lengths[0]                           # sanity check
+
+        time_steps = embedded.size(0)                                   # get time step from embed
+        outputs = []
+        hidden = None
+        for t in range(time_steps):
+            src_input = embedded[t]                                          
+            hidden = self.rnnCell(src_input, hidden)
+            outputs.append(hidden)
+
+        layer_final =  hidden                                  
+        outputs = torch.stack(outputs)
+        return layer_final, outputs                                             
+
+# New RNN encoder that does not pack and has extra RNN layer
 class RNNEncoder(EncoderBase):
+    ''' 
+        rnn encoder with extra layer
+    '''
+    def __init__(self, rnn_type, hidden_size, n_layers, dropout, embedding=None):
+        super().__init__()
+        self.no_pack_padded_seq = False
+
+        self.hidden_size = hidden_size
+        self.n_layers = n_layers
+        self.dropout = dropout
+
+        assert embedding != None
+        self.embedding = embedding
+        
+        # add extra rnn layer
+        self.rnnLayer = RNNLayer(rnn_type, hidden_size, n_layers, dropout, embedding)
+        self.rnn = getattr(nn, rnn_type)(self.embedding.embedding_size, hidden_size, n_layers, dropout=dropout)
+        
+        self.dropout = nn.Dropout(dropout)
+        
+    def forward(self, src, lengths=None):
+
+        self._check_args(src, lengths)
+        #src = [src sent len, batch size]
+
+        layer_final, outputs = self.rnnLayer(src, lengths)
+        # print(layer_final.size())
+        # print(outputs.size())
+        layer_in = layer_final.expand(self.n_layers, *layer_final.size())
+        # print("new layer size is ", layer_in.size())
+        #embedded = [src sent len, batch size, emb dim]
+        memory_bank, encoder_final = self.rnn(outputs, (layer_in, layer_in.new_zeros(*layer_in.size(), requires_grad=False)))
+
+        #outputs = [src sent len, batch size, hid dim * n directions]
+        #hidden = [n layers * n directions, batch size, hid dim]
+        #cell = [n layers * n directions, batch size, hid dim]
+        # print(memory_bank)
+        # print(encoder_final)
+
+        return encoder_final, memory_bank
+
+
+
+class vanillaRNNEncoder(EncoderBase):
+    ''' 
+        vanilla rnn encoder, supports RNN|lstm
+    '''
     def __init__(self, rnn_type, hidden_size, n_layers, dropout, embedding=None):
         super().__init__()
         self.no_pack_padded_seq = False
@@ -75,27 +155,29 @@ class RNNEncoder(EncoderBase):
     def forward(self, src, lengths=None):
 
         self._check_args(src, lengths)
-
         #src = [src sent len, batch size]
-        
         embedded = self.embedding(src)
         packed_emb = embedded
+
         if lengths is not None and not self.no_pack_padded_seq:
             # Lengths data is wrapped inside a Tensor.
             lengths = lengths.view(-1).tolist()
             packed_emb = pack(embedded, lengths)
-        
+
         #embedded = [src sent len, batch size, emb dim]
-        
+        print("orig emb size",embedded.size())
+        print("after packed size",packed_emb[0].size(), packed_emb[1].size())
         memory_bank, encoder_final = self.rnn(packed_emb)
-        
         #outputs = [src sent len, batch size, hid dim * n directions]
         #hidden = [n layers * n directions, batch size, hid dim]
         #cell = [n layers * n directions, batch size, hid dim]
         
         #outputs are always from the top hidden layer
+        print(memory_bank)
+        print(memory_bank[0].size(), memory_bank[1].size())
 
         if lengths is not None and not self.no_pack_padded_seq:
             memory_bank = unpack(memory_bank)[0]
-        
+        print(memory_bank[0].size(), memory_bank[1].size())
+
         return encoder_final, memory_bank

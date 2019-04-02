@@ -188,7 +188,7 @@ class RNNDecoder(nn.Module):
         assert embedding != None
         self.embedding = embedding
         self.output_dim = self.embedding.vocab_size
-        
+
         #self.rnn = getattr(nn, rnn_type)(emb_dim, hid_dim, n_layers, dropout=dropout)
         self.rnn = getattr(nn, rnn_type)(self.embedding.embedding_size, hidden_size, n_layers, dropout=dropout)
         

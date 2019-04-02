@@ -1,4 +1,6 @@
 __pycache__/
 other_approach/
 data/
+data_huff/
 .vscode
+*.pt
