@@ -88,6 +88,8 @@ def main(opt):
     # else:
     checkpoint = None
     model_opt = opt
+    if opt.exp_huff:
+        print("\n------------------------STARTING EXPERIMENT------------------------\n")
 
     # Peek the fisrt dataset to determine the data_type.
     # (All datasets have the same data_type).

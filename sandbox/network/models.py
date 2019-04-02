@@ -98,5 +98,8 @@ class NMTModel(nn.Module):
                          enc_state if dec_state is None
                          else dec_state,
                          memory_lengths=lengths)
+        print("final Model's state_dict:")
+        for param_tensor in self.state_dict():
+            print(param_tensor, "\t", self.state_dict()[param_tensor].size())
                          
         return decoder_outputs, attns, dec_state

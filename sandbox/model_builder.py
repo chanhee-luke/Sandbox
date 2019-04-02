@@ -59,7 +59,7 @@ def build_encoder(opt, embeddings):
         embeddings (Embeddings): vocab embeddings for this encoder.
     """
     # "rnn"
-    if opt.exp_RNNlayer:
+    if opt.exp_huff:
         return RNNEncoder(opt.rnn_type, opt.rnn_size, opt.enc_layers, opt.dropout, embeddings)
     else:
         return vanillaRNNEncoder(opt.rnn_type, opt.rnn_size, opt.enc_layers, opt.dropout, embeddings)
@@ -130,7 +130,9 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None):
     src_dict = fields["src"].vocab
     feature_dicts = inputters.collect_feature_vocabs(fields, 'src')
     src_embeddings = build_embeddings(model_opt, src_dict, feature_dicts)
+
     encoder = build_encoder(model_opt, src_embeddings)
+    print("this is an instance of exp huff encoder", isinstance(encoder, RNNEncoder))
 
     # Build decoder.
     tgt_dict = fields["tgt"].vocab
@@ -166,7 +168,9 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None):
     #                              fields["tgt"].vocab)
 
     # Load the model states from checkpoint or initialize them.
+    print(checkpoint)
     if checkpoint is not None:
+        print("checkpoint is not none")
         model.load_state_dict(checkpoint['model'])
         generator.load_state_dict(checkpoint['generator'])
     else:

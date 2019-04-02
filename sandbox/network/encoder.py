@@ -11,6 +11,7 @@ from torch.nn.utils.rnn import pad_packed_sequence as unpack
 from sandbox.utils.misc import aeq
 from torch.autograd import Variable
 from torch.nn.functional import pad
+from torch.nn.utils.rnn import pad_sequence
 
 class EncoderBase(nn.Module):
     """
@@ -62,7 +63,8 @@ class RNNLayer(EncoderBase):
     """
         custom RNN layer that merges output if O_t + O_(t-1) > packet length
         #TODO add vocab lookup and token merge
-        #TODO pack sequence
+        #TODO Fix batching, iterate individual each ones
+        #pack sequence(not necessary...)
     """
     def __init__(self, rnn_type, hidden_size, n_layers, dropout, embedding=None):
         super(RNNLayer, self).__init__()
@@ -74,20 +76,22 @@ class RNNLayer(EncoderBase):
         self.rnnCell = nn.RNNCell(self.input_size, self.hidden_size)
 
     def forward(self, src, lengths=None):
-        
+
         embedded = self.embedding(src)
         assert embedded.size(0) == lengths[0]                           # sanity check
-
         time_steps = embedded.size(0)                                   # get time step from embed
         outputs = []
         hidden = None
         for t in range(time_steps):
-            src_input = embedded[t]                                          
+            src_input = embedded[t]  
             hidden = self.rnnCell(src_input, hidden)
             outputs.append(hidden)
 
-        layer_final =  hidden                                  
+        layer_final =  hidden 
         outputs = torch.stack(outputs)
+        print("layer Model's state_dict:")
+        for param_tensor in self.state_dict():
+            print(param_tensor, "\t", self.state_dict()[param_tensor].size())
         return layer_final, outputs                                             
 
 class RNNEncoder(EncoderBase):
@@ -131,6 +135,10 @@ class RNNEncoder(EncoderBase):
         #cell = [n layers * n directions, batch size, hid dim]
         # print(memory_bank)
         # print(encoder_final)
+
+        print("encoder Model's state_dict:")
+        for param_tensor in self.state_dict():
+            print(param_tensor, "\t", self.state_dict()[param_tensor].size())
 
         return encoder_final, memory_bank
 

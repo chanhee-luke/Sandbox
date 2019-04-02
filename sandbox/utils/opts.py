@@ -8,8 +8,8 @@ def model_opts(parser):
     Be careful with these as they will be used during translation.
     """
     group = parser.add_argument_group('Model: Experiment')
-    group.add_argument('-exp_RNNlayer', action='store_true',
-                        help="Turn on experimental RNNlayer")
+    group.add_argument('-exp_huff', action='store_true',
+                        help="Turn on experimental RNNlayer for huffman encoding")
 
     # Embedding Options
     group = parser.add_argument_group('Model: Embeddings')
