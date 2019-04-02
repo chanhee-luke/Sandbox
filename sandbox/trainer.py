@@ -146,6 +146,9 @@ class Trainer(object):
 
             # 4. Drop a checkpoint if needed.
             self.maybe_drop_checkpoint(epoch, valid_stats)
+            print("Model's state_dict:")
+            for param_tensor in self.model.state_dict():
+                print(param_tensor, "\t", self.model.state_dict()[param_tensor].size())
 
     def train_epoch(self, train_iter, epoch):
         """ Train next epoch.

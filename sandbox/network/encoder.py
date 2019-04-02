@@ -89,9 +89,9 @@ class RNNLayer(EncoderBase):
 
         layer_final =  hidden 
         outputs = torch.stack(outputs)
-        print("layer Model's state_dict:")
-        for param_tensor in self.state_dict():
-            print(param_tensor, "\t", self.state_dict()[param_tensor].size())
+        # print("layer Model's state_dict:")
+        # for param_tensor in self.state_dict():
+        #     print(param_tensor, "\t", self.state_dict()[param_tensor].size())
         return layer_final, outputs                                             
 
 class RNNEncoder(EncoderBase):
@@ -136,9 +136,9 @@ class RNNEncoder(EncoderBase):
         # print(memory_bank)
         # print(encoder_final)
 
-        print("encoder Model's state_dict:")
-        for param_tensor in self.state_dict():
-            print(param_tensor, "\t", self.state_dict()[param_tensor].size())
+        # print("encoder Model's state_dict:")
+        # for param_tensor in self.state_dict():
+        #     print(param_tensor, "\t", self.state_dict()[param_tensor].size())
 
         return encoder_final, memory_bank
 
