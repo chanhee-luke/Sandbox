@@ -4,4 +4,5 @@ Personal NLP research platform borrowed heavily from [OpenNMT-py](https://github
 ## TODOs
 
 - [ ] Refactor code to be more readable
-- [ ] Diff w/ Opennmt-py
+- [ ] Add more customizable experiment layer, don't hard code everything in the future
+- [ ] Diff w/ Opennmt-py, incorporate updates
