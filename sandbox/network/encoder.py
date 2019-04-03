@@ -136,9 +136,10 @@ class RNNEncoder(EncoderBase):
             # Lengths data is wrapped inside a Tensor.
             lengths = lengths.view(-1).tolist()
             packed_emb = pack(outputs, lengths)
+            print("packed?")
 
         memory_bank, encoder_final = self.rnn(packed_emb)
-
+        #print(memory_bank)
         #outputs = [src sent len, batch size, hid dim * n directions]
         #hidden = [n layers * n directions, batch size, hid dim]
         #cell = [n layers * n directions, batch size, hid dim]
@@ -148,6 +149,9 @@ class RNNEncoder(EncoderBase):
         # print("encoder Model's state_dict:")
         # for param_tensor in self.state_dict():
         #     print(param_tensor, "\t", self.state_dict()[param_tensor].size())
+
+        if lengths is not None and not self.no_pack_padded_seq:
+            memory_bank = unpack(memory_bank)[0]
 
         return encoder_final, memory_bank
 

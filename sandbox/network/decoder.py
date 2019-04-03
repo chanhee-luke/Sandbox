@@ -125,6 +125,7 @@ class RNNDecoderBase(nn.Module):
         """
         # Check
         assert isinstance(state, RNNDecoderState)
+        #print(memory_bank)
         # tgt.size() returns tgt length and batch
         _, tgt_batch, _ = tgt.size()
         _, memory_batch, _ = memory_bank.size()
@@ -168,6 +169,7 @@ class RNNDecoderBase(nn.Module):
             return hidden
 
         if isinstance(encoder_final, tuple):  # LSTM
+            print("decoder is lstm")
             return RNNDecoderState(self.hidden_size,
                                    tuple([_fix_enc_hidden(enc_hid)
                                           for enc_hid in encoder_final]))

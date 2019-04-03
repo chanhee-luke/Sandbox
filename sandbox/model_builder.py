@@ -132,7 +132,7 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, token=None):
     src_embeddings = build_embeddings(model_opt, src_dict, feature_dicts)
 
     encoder = build_encoder(model_opt, src_embeddings)
-    print("this is an instance of exp huff encoder", isinstance(encoder, RNNEncoder))
+    print("this is an instance of exp huff encoder ", isinstance(encoder, RNNEncoder))
 
     # Build decoder.
     tgt_dict = fields["tgt"].vocab
@@ -150,6 +150,7 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, token=None):
     #     tgt_embeddings.word_lut.weight = src_embeddings.word_lut.weight
 
     decoder = build_decoder(model_opt, tgt_embeddings)
+    print("this is an instance of exp inputfeed decoder ", isinstance(decoder, InputFeedRNNDecoder))
 
     # Build NMTModel(= encoder + decoder).
     device = torch.device("cuda" if gpu else "cpu")
