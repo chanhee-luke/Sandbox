@@ -220,6 +220,12 @@ def _build_field_vocab(field, counter, **kwargs):
         if tok is not None))
     field.vocab = field.vocab_cls(counter, specials=specials, **kwargs)
 
+# helper function to get token length
+def get_token_len(vocab, stoi):
+    token_len = dict()
+    for v in vocab:
+        token_len[stoi[v]] = len(v)
+    return token_len
 
 def build_vocab(train_dataset_files, fields, data_type, share_vocab,
                 src_vocab_path, src_vocab_size, src_words_min_frequency,
@@ -334,7 +340,13 @@ def build_vocab(train_dataset_files, fields, data_type, share_vocab,
             fields["src"].vocab = merged_vocab
             fields["tgt"].vocab = merged_vocab
 
-    return fields
+    token_len = dict()
+    token_len['src'] = get_token_len(counter['src'], fields['src'].vocab.stoi)
+    token_len['tgt'] = get_token_len(counter['tgt'], fields['tgt'].vocab.stoi)
+    token_len['src_itos'] = fields['src'].vocab.itos 
+    token_len['tgt_itos'] = fields['tgt'].vocab.itos
+
+    return fields, token_len
 
 
 class OrderedIterator(torchtext.data.Iterator):

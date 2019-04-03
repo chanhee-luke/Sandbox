@@ -23,6 +23,7 @@ class ModelSaverBase(object):
         self.fields = fields
         self.optim = optim
         self.start_checkpoint_at = start_checkpoint_at
+        self.token = model.token
 
     def maybe_save(self, epoch, valid_stats):
         if epoch >= self.start_checkpoint_at:
@@ -66,6 +67,7 @@ class ModelSaver(ModelSaverBase):
             'opt': self.model_opt,
             'epoch': epoch,
             'optim': self.optim,
+            'token_len': self.token
         }
         torch.save(checkpoint,
                    '%s_acc_%.2f_ppl_%.2f_e%d.pt'

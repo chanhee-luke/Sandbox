@@ -121,14 +121,23 @@ class RNNEncoder(EncoderBase):
         #src = [src sent len, batch size]
 
         layer_final, outputs = self.rnnLayer(src, self.embedding, lengths)
-        # print(layer_final.size())
-        # print(outputs.size())
-        layer_in = layer_final.expand(self.n_layers, *layer_final.size()).contiguous()
-        # print("new layer size is ", layer_in.size())
-        #embedded = [src sent len, batch size, emb dim]
-        cell_n = layer_in.new_zeros(*layer_in.size(), requires_grad=False).contiguous()
-        #print(outputs[1])
-        memory_bank, encoder_final = self.rnn(outputs)
+        # Experimental
+        # # print(layer_final.size())
+        # # print(outputs.size())
+        # layer_in = layer_final.expand(self.n_layers, *layer_final.size()).contiguous()
+        # # print("new layer size is ", layer_in.size())
+        # #embedded = [src sent len, batch size, emb dim]
+        # cell_n = layer_in.new_zeros(*layer_in.size(), requires_grad=False).contiguous()
+        # #print(outputs[1])
+
+        packed_emb = outputs
+
+        if lengths is not None and not self.no_pack_padded_seq:
+            # Lengths data is wrapped inside a Tensor.
+            lengths = lengths.view(-1).tolist()
+            packed_emb = pack(outputs, lengths)
+
+        memory_bank, encoder_final = self.rnn(packed_emb)
 
         #outputs = [src sent len, batch size, hid dim * n directions]
         #hidden = [n layers * n directions, batch size, hid dim]
@@ -141,7 +150,6 @@ class RNNEncoder(EncoderBase):
         #     print(param_tensor, "\t", self.state_dict()[param_tensor].size())
 
         return encoder_final, memory_bank
-
 
 
 class vanillaRNNEncoder(EncoderBase):

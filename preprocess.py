@@ -167,7 +167,7 @@ def build_save_dataset(corpus_type, fields, opt, logger=None):
 
 def build_save_vocab(train_dataset, fields, opt, logger=None):
     """ Building and saving the vocab """
-    fields = inputters.build_vocab(train_dataset, fields, opt.data_type,
+    fields, token_len = inputters.build_vocab(train_dataset, fields, opt.data_type,
                                    opt.share_vocab,
                                    opt.src_vocab,
                                    opt.src_vocab_size,
@@ -179,7 +179,9 @@ def build_save_vocab(train_dataset, fields, opt, logger=None):
 
     # Can't save fields, so remove/reconstruct at training time.
     vocab_file = opt.save_data + '.vocab.pt'
+    token_file = opt.save_data + '.token.pt'
     torch.save(inputters.save_fields_to_vocab(fields), vocab_file)
+    torch.save(token_len, token_file)
 
 
 def main():

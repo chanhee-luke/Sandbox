@@ -99,11 +99,14 @@ def main(opt):
     # Load fields generated from preprocess phase.
     fields = _load_fields(first_dataset, data_type, opt, checkpoint)
 
+    # load token_len dict
+    token_len = torch.load(opt.data + '.token.pt')
+
     # Report src/tgt features.
     _collect_report_features(fields)
 
     # Build model.
-    model = build_model(model_opt, opt, fields, checkpoint)
+    model = build_model(model_opt, opt, fields, checkpoint, token_len)
     _tally_parameters(model)
     _check_save_model_path()
 

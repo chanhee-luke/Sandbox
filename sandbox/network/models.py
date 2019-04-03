@@ -100,5 +100,5 @@ class NMTModel(nn.Module):
         # print("final Model's state_dict:")
         # for param_tensor in self.state_dict():
         #     print(param_tensor, "\t", self.state_dict()[param_tensor].size())
-                         
+        #print("mode loaded token ", self.token)
         return decoder_outputs, attns, dec_state

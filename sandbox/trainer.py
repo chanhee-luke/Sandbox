@@ -281,6 +281,7 @@ class Trainer(object):
             'opt': opt,
             'epoch': epoch,
             'optim': self.optim,
+            'token_len': self.model.token
         }
         torch.save(checkpoint,
                    '%s_acc_%.2f_ppl_%.2f_e%d.pt'

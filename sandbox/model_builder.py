@@ -111,7 +111,7 @@ def load_test_model(opt, dummy_opt):
     return fields, model, model_opt
 
 
-def build_base_model(model_opt, fields, gpu, checkpoint=None):
+def build_base_model(model_opt, fields, gpu, checkpoint=None, token=None):
     """
     Args:
         model_opt: the option loaded from checkpoint.
@@ -168,12 +168,14 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None):
     #                              fields["tgt"].vocab)
 
     # Load the model states from checkpoint or initialize them.
-    print(checkpoint)
+
     if checkpoint is not None:
         print("checkpoint is not none")
         model.load_state_dict(checkpoint['model'])
+        model.token = checkpoint['token_len']
         generator.load_state_dict(checkpoint['generator'])
     else:
+        model.token = token
         if model_opt.param_init != 0.0:
             for p in model.parameters():
                 p.data.uniform_(-model_opt.param_init, model_opt.param_init)
@@ -202,14 +204,17 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None):
     return model
 
 
-def build_model(model_opt, opt, fields, checkpoint):
+def build_model(model_opt, opt, fields, checkpoint, token_len=None):
     """ Build the Model """
     print('Building model...')
+    token = None
+    if token_len:
+        token = token_len
     model = build_base_model(model_opt, fields,
-                             use_gpu(opt), checkpoint)
+                             use_gpu(opt), checkpoint, token)
     if len(opt.gpuid) > 1:
         print('Multi gpu training: ', opt.gpuid)
         model = nn.DataParallel(model, device_ids=opt.gpuid, dim=1)
     print(model)
-
+    
     return model
