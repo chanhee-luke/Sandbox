@@ -95,6 +95,9 @@ class RNNLayer(nn.Module):
         return outputs, layer_final                                             
 
 class mergeLayer(nn.Module):
+    """
+        Custom layer to only pack tokens size < packet_size
+    """
     def __init__(self, token_len):
         super().__init__()
         self.token = token_len
