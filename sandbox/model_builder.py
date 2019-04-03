@@ -173,9 +173,9 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, token=None):
 
     if checkpoint is not None:
         print("checkpoint is not none")
-        model.load_state_dict(checkpoint['model'])
+        model.load_state_dict(checkpoint['model'], strict=False)
         model.token = checkpoint['token_len']
-        generator.load_state_dict(checkpoint['generator'])
+        generator.load_state_dict(checkpoint['generator'], strict=False)
     else:
         model.token = token
         if model_opt.param_init != 0.0:
