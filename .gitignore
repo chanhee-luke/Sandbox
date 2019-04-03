@@ -4,3 +4,4 @@ data/
 data_huff/
 .vscode
 *.pt
+pred.txt
