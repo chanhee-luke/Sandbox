@@ -10,6 +10,8 @@ def model_opts(parser):
     group = parser.add_argument_group('Model: Experiment')
     group.add_argument('-exp_huff', action='store_true',
                         help="Turn on experimental RNNlayer for huffman encoding")
+    group.add_argument('-vanilla', action='store_true', 
+                       help='use vanilla RNNEncoder to translate, overwrite exp_huff')
 
     # Embedding Options
     group = parser.add_argument_group('Model: Embeddings')
@@ -286,10 +288,13 @@ def train_opts(parser):
                        help="Output logs to a file under this path.")
 
 def translate_opts(parser):
+
     """ Translation / inference options """
     group = parser.add_argument_group('Model')
     group.add_argument('-model', required=True,
                        help='Path to model .pt file')
+    group.add_argument('-vanilla', action='store_true', 
+                       help='use vanilla RNNEncoder to translate, overwrite exp_huff')
 
     group = parser.add_argument_group('Data')
     group.add_argument('-data_type', default="text",
