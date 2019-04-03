@@ -136,7 +136,7 @@ class RNNEncoder(EncoderBase):
             # Lengths data is wrapped inside a Tensor.
             lengths = lengths.view(-1).tolist()
             packed_emb = pack(outputs, lengths)
-            print("packed?")
+            #print("packed?")
 
         memory_bank, encoder_final = self.rnn(packed_emb)
         #print(memory_bank)

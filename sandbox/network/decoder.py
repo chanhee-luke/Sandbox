@@ -169,7 +169,7 @@ class RNNDecoderBase(nn.Module):
             return hidden
 
         if isinstance(encoder_final, tuple):  # LSTM
-            print("decoder is lstm")
+            #("decoder is lstm")
             return RNNDecoderState(self.hidden_size,
                                    tuple([_fix_enc_hidden(enc_hid)
                                           for enc_hid in encoder_final]))
