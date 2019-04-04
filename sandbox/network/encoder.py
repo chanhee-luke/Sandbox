@@ -129,7 +129,7 @@ class RNNEncoder(EncoderBase):
         
         # add extra rnn layer
         #self.rnnLayer = RNNLayer(rnn_type, hidden_size, n_layers, dropout, embedding)
-        self.RNN = nn.RNN(self.embedding.embedding_size, hidden_size)
+        self.RNN = nn.LSTM(self.embedding.embedding_size, hidden_size)
         self.rnn = getattr(nn, rnn_type)(self.embedding.embedding_size, hidden_size, n_layers, dropout=dropout)
         
         self.dropout = nn.Dropout(dropout)
@@ -141,11 +141,11 @@ class RNNEncoder(EncoderBase):
 
         embedded = self.embedding(src)
         packed_emb = embedded
-
-        if lengths is not None and not self.no_pack_padded_seq:
+        
+        #if lengths is not None and not self.no_pack_padded_seq:
             # Lengths data is wrapped inside a Tensor.
-            lengths = lengths.view(-1).tolist()
-            packed_emb = pack(embedded, lengths)
+        #    lengths = lengths.view(-1).tolist()
+        #    packed_emb = pack(embedded, lengths)
 
         #layer_final, outputs = self.rnnLayer(src, self.embedding, lengths)
         outputs, layer_final = self.RNN(packed_emb)
@@ -164,8 +164,10 @@ class RNNEncoder(EncoderBase):
         #     # Lengths data is wrapped inside a Tensor.
         #     lengths = lengths.view(-1).tolist()
         #     packed_emb = pack(outputs, lengths)
+        h_n = torch.squeeze(torch.stack([layer_final[0], torch.zeros(layer_final[0].size()).cuda()]))
+        c_n = torch.squeeze(torch.stack([layer_final[1], torch.zeros(layer_final[1].size()).cuda()]))
 
-        memory_bank, encoder_final = self.rnn(outputs)
+        memory_bank, encoder_final = self.rnn(outputs, (h_n, c_n))
         #print(memory_bank)
         #outputs = [src sent len, batch size, hid dim * n directions]
         #hidden = [n layers * n directions, batch size, hid dim]
@@ -177,8 +179,8 @@ class RNNEncoder(EncoderBase):
         # for param_tensor in self.state_dict():
         #     print(param_tensor, "\t", self.state_dict()[param_tensor].size())
 
-        if lengths is not None and not self.no_pack_padded_seq:
-            memory_bank = unpack(memory_bank)[0]
+        #if lengths is not None and not self.no_pack_padded_seq:
+        #    memory_bank = unpack(memory_bank)[0]
 
         return encoder_final, memory_bank
 
