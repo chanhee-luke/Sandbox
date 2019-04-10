@@ -100,16 +100,56 @@ class mergeLayer(nn.Module):
     """
     def __init__(self, token_len):
         super().__init__()
-        self.token = token_len
+        self.token_len = token_len
 
-    def forward(self, src, lengths):
-        #TODO read src and merge
+    def forward(self, embedded, src, lengths, token_dict):
+        def packer(embeds, lengths, num):
+            """Pack words in string"""
+            packed = torch.zeros(500).cuda()
+            curr_length = 0
+            outputs = []
+            for index, word in enumerate(embeds):
+                packed = torch.add(packed, word)
+                curr_length += lengths[index]
+                if index == len(embeds) - 1 or (curr_length + lengths[index + 1]) > num: 
+                    output = torch.tensor(packed)
+                    outputs.append(output)
+                    packed = torch.zeros(500).cuda()
+                    curr_length = 0
+            return outputs
+
+        # Read src and merge
         # src = [sent_length x batch_size x hidden_size]
-        for input in src:
-            #TODO do_something
-            continue
-
-        return src, lengths
+        # 
+        time_steps = embedded.size(0)
+        batch_size = embedded.size(1)
+        for i in range(batch_size):
+            sent_lengths = []
+            embeds = []
+            # Pack embeddings
+            for j in range(time_steps):
+                word = embedded[j][i]
+                orig_word = src[j][i]
+                if orig_word.item() == 1:
+                    continue
+                if orig_word.item() == 0:
+                    sent_lengths.append(4)
+                else:
+                    sent_lengths.append(token_dict['src'][orig_word.item()])
+                embeds.append(word)
+            outputs = packer(embeds, sent_lengths, self.token_len)
+            # Put packed embeddings back into original embedding tensors
+            for k, packed in enumerate(outputs):
+                embedded[k][i] = packed
+            lengths[i] = len(outputs)
+            #print(lengths)
+        embedded = embedded.permute(1,0,2)
+        packed_embedded = [x for _, x in sorted(zip(lengths.tolist(),embedded), key=lambda pair: pair[0], reverse=True)]
+        packed_embedded = torch.stack(packed_embedded)
+        packed_embedded = packed_embedded.permute(1,0,2)
+        embedded = embedded.permute(1,0,2)
+        merged_lengths, _ = torch.sort(lengths, descending=True)
+        return packed_embedded, merged_lengths
 
 
 class RNNEncoder(EncoderBase):
@@ -129,28 +169,27 @@ class RNNEncoder(EncoderBase):
         
         # add extra rnn layer
         #self.rnnLayer = RNNLayer(rnn_type, hidden_size, n_layers, dropout, embedding)
-        self.RNN = nn.LSTM(self.embedding.embedding_size, hidden_size)
+        # add extra merge layer
+        self.merge = mergeLayer(22)
+        # add extra RNN layer
+        #self.RNN = nn.LSTM(self.embedding.embedding_size, hidden_size)
         self.rnn = getattr(nn, rnn_type)(self.embedding.embedding_size, hidden_size, n_layers, dropout=dropout)
         
         self.dropout = nn.Dropout(dropout)
         
-    def forward(self, src, lengths=None):
+    def forward(self, src, lengths=None, token_dict=None):
 
         self._check_args(src, lengths)
         #src = [src sent len, batch size]
-
         embedded = self.embedding(src)
         packed_emb = embedded
-
-        #if lengths is not None and not self.no_pack_padded_seq:
+        merged_embed, merged_lengths = self.merge(packed_emb, src, lengths, token_dict)
+        if lengths is not None and not self.no_pack_padded_seq:
             # Lengths data is wrapped inside a Tensor.
-        #    lengths = lengths.view(-1).tolist()
-        #    packed_emb = pack(embedded, lengths)
+            merged_lengths = merged_lengths.view(-1).tolist()
+            packed_emb = pack(merged_embed, merged_lengths)
 
-        #layer_final, outputs = self.rnnLayer(src, self.embedding, lengths)
-        outputs, layer_final = self.RNN(packed_emb)
-        lengths = lengths.view(-1).tolist()
-        inter_packed = pack(outputs, lengths)
+        memory_bank, encoder_final = self.rnn(packed_emb)
 
         # Experimental
         # # print(layer_final.size())
@@ -167,10 +206,9 @@ class RNNEncoder(EncoderBase):
         #     # Lengths data is wrapped inside a Tensor.
         #     lengths = lengths.view(-1).tolist()
         #     packed_emb = pack(outputs, lengths)
-        h_n = torch.squeeze(torch.stack([layer_final[0], torch.zeros(layer_final[0].size()).cuda()]))
-        c_n = torch.squeeze(torch.stack([layer_final[1], torch.zeros(layer_final[1].size()).cuda()]))
+        # h_n = torch.squeeze(torch.stack([layer_final[0], torch.zeros(layer_final[0].size()).cuda()]))
+        # c_n = torch.squeeze(torch.stack([layer_final[1], torch.zeros(layer_final[1].size()).cuda()]))
 
-        memory_bank, encoder_final = self.rnn(inter_packed, (h_n, c_n))
         #print(memory_bank)
         #outputs = [src sent len, batch size, hid dim * n directions]
         #hidden = [n layers * n directions, batch size, hid dim]
