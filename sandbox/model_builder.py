@@ -103,8 +103,6 @@ def load_test_model(opt, dummy_opt):
     fields = inputters.load_fields_from_vocab(
         checkpoint['vocab'], data_type=opt.data_type)
     checkpoint['token_dict'] = token_dict
-    print(len(token_dict))
-    print(len(checkpoint['token_dict']))
     model_opt = checkpoint['opt']
     for arg in dummy_opt:
         if arg not in model_opt:

@@ -6,6 +6,7 @@ import torch.nn as nn
 
 import sandbox.modules.stacked_rnn
 from sandbox.utils.misc import aeq
+from sandbox.network.encoder import mergeLayer
 
 class RNNDecoderBase(nn.Module):
     """
