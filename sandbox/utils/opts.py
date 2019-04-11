@@ -295,6 +295,8 @@ def translate_opts(parser):
                        help='Path to model .pt file')
     group.add_argument('-vanilla', action='store_true', 
                        help='use vanilla RNNEncoder to translate, overwrite exp_huff')
+    group.add_argument('-token_dict', required=True,
+                        help='Path to token .pt file')
 
     group = parser.add_argument_group('Data')
     group.add_argument('-data_type', default="text",

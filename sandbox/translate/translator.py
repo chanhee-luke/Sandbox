@@ -342,8 +342,8 @@ class Translator(object):
         src_lengths = None
         if data_type == 'text':
             _, src_lengths = batch.src
-
-        enc_states, memory_bank = self.model.encoder(src, src_lengths)
+    
+        enc_states, memory_bank = self.model.encoder(src, src_lengths, self.model.token)
         dec_states = self.model.decoder.init_decoder_state(
             src, memory_bank, enc_states)
 

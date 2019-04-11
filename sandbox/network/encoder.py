@@ -131,7 +131,7 @@ class mergeLayer(nn.Module):
                 word = embedded[j][i]
                 orig_word = src[j][i]
                 if orig_word.item() == 1:
-                    continue
+                    continue 
                 if orig_word.item() == 0:
                     sent_lengths.append(4)
                 else:

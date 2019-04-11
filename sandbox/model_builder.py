@@ -99,9 +99,12 @@ def load_test_model(opt, dummy_opt):
     """ Load model for Inference """
     checkpoint = torch.load(opt.model,
                             map_location=lambda storage, loc: storage)
+    token_dict = torch.load(opt.token_dict, map_location=lambda storage, loc: storage)
     fields = inputters.load_fields_from_vocab(
         checkpoint['vocab'], data_type=opt.data_type)
-
+    checkpoint['token_dict'] = token_dict
+    print(len(token_dict))
+    print(len(checkpoint['token_dict']))
     model_opt = checkpoint['opt']
     for arg in dummy_opt:
         if arg not in model_opt:
@@ -174,7 +177,7 @@ def build_base_model(model_opt, fields, gpu, checkpoint=None, token=None):
     if checkpoint is not None:
         print("checkpoint is not none")
         model.load_state_dict(checkpoint['model'], strict=False)
-        model.token = checkpoint['token_len']
+        model.token = checkpoint['token_dict']
         generator.load_state_dict(checkpoint['generator'], strict=False)
     else:
         model.token = token
