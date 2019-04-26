@@ -44,7 +44,7 @@ class EncoderBase(nn.Module):
             n_batch_, = lengths.size()
             aeq(n_batch, n_batch_)
 
-    def forward(self, src, lengths=None):
+    def forward(self, src, lengths=None, token_dict=None):
         """
         Args:
             src (:obj:`LongTensor`):
@@ -84,7 +84,7 @@ class RNNLayer(nn.Module):
         hidden = None
         for t in range(time_steps):
             src_input = embedded[t]  
-            hx, cx = self.rnnCell(src_input, hidden)
+            hidden = self.rnnCell(src_input, hidden)
             outputs.append(hidden)
 
         layer_final =  hidden 
@@ -151,6 +151,7 @@ class mergeLayer(nn.Module):
         merged_lengths, _ = torch.sort(lengths, descending=True)
         return packed_embedded, merged_lengths
 
+
 class mergeLSTMLayer(nn.Module):
     """
         Custom layer to only feed tokens size < packet_size to lstm cell and get output
@@ -160,9 +161,7 @@ class mergeLSTMLayer(nn.Module):
         self.token_len = token_len
         self.lstm = nn.LSTMCell(500, 500)
 
-    def forward(self, embedded, src, lengths, token_dict):
-        with torch.autograd.set_detect_anomaly(True):
-            def packer(embeds, lengths, num):
+    def packer(self, embeds, lengths, num):
                 """Pack words in string"""
                 packed = torch.zeros(500).cuda()
                 # packed = torch.zeros(500)
@@ -178,26 +177,32 @@ class mergeLSTMLayer(nn.Module):
 
                     curr_length += lengths[index]
 
+                    # Pack if length > given
                     if index == len(embeds) - 1 or (curr_length + lengths[index + 1]) > num: 
-                        # Run through lstm here
-                        hx = torch.randn(1, 500).cuda()
-                        cx = torch.randn(1, 500).cuda()
-                        for e in curr:
-                            # print(e.size())
-                            e1 = torch.unsqueeze(e, 0)
-                            # print(e1.size())
-                            hx, cx = self.lstm(e1, (hx, cx))
-                        packed_output = hx
+                        print(curr_length, lengths, index, len(curr))
+                        if len(curr) != 1:
+                            # Run through lstm here
+                            hx = torch.randn(1, 500).cuda()
+                            cx = torch.randn(1, 500).cuda()
+                            for e in curr:
+                                # print(e.size())
+                                e1 = torch.unsqueeze(e, 0).clone().detach().requires_grad_(True).cuda()
+                                # e1 = torch.rand(1, 500)
+                                # print(e1.size())
+                                hx, cx = self.lstm(e1, (hx, cx))
+                            packed_output = hx
 
-                        output = torch.tensor(packed)
+                        # output = packed.clone().detach().requires_grad_(True)
                         outputs.append(packed_output)
                         # packed = torch.zeros(500)
                         packed = torch.zeros(500).cuda()
-
                         curr_length = 0
                         curr = []
+
                 return outputs
 
+    def forward(self, embedded, src, lengths, token_dict):
+        with torch.autograd.set_detect_anomaly(True):
             # Read src and merge
             # src = [sent_length x batch_size x hidden_size]
             # 
@@ -217,7 +222,7 @@ class mergeLSTMLayer(nn.Module):
                     else:
                         sent_lengths.append(token_dict['src'][orig_word.item()])
                     embeds.append(word)
-                outputs = packer(embeds, sent_lengths, self.token_len)
+                outputs = self.packer(embeds, sent_lengths, self.token_len)
                 # Put packed embeddings back into original embedding tensors
                 for k, packed in enumerate(outputs):
                     embedded[k][i] = packed
