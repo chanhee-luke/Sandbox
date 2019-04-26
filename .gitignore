@@ -6,3 +6,4 @@ data_huff/
 *.pt
 pred.txt
 *.sh
+.DS_Store
