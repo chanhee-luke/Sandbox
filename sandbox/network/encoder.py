@@ -159,7 +159,7 @@ class mergeLSTMLayer(nn.Module):
     def __init__(self, token_len):
         super().__init__()
         self.token_len = token_len
-        self.lstm = nn.LSTMCell(500, 250)
+        self.lstm = nn.LSTMCell(500, 500)
 
     def packer(self, embeds, lengths, num):
                 """Pack words in string"""
@@ -183,8 +183,8 @@ class mergeLSTMLayer(nn.Module):
                         packed_output = packed
                         if len(curr) != 1:
                             # Run through lstm here
-                            hx = torch.randn(1, 250).cuda()
-                            cx = torch.randn(1, 250).cuda()
+                            hx = torch.randn(1, 500).cuda()
+                            cx = torch.randn(1, 500).cuda()
                             for e in curr:
                                 # print(e.size())
                                 e1 = torch.unsqueeze(e, 0).clone().detach().requires_grad_(True).cuda()
