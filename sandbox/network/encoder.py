@@ -179,7 +179,7 @@ class mergeLSTMLayer(nn.Module):
 
                     # Pack if length > given
                     if index == len(embeds) - 1 or (curr_length + lengths[index + 1]) > num: 
-                        print(curr_length, lengths, index, len(curr))
+                        # print(curr_length, lengths, index, len(curr))
                         packed_output = packed
                         if len(curr) != 1:
                             # Run through lstm here
