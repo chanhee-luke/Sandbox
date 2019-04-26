@@ -258,35 +258,36 @@ def shards(state, shard_size, eval_only=False):
     Side effect:
         After the last shard, this function does back-propagation.
     """
-    if eval_only:
-        yield filter_shard_state(state)
-    else:
-        # non_none: the subdict of the state dictionary where the values
-        # are not None.
-        non_none = dict(filter_shard_state(state, shard_size))
+    with torch.autograd.set_detect_anomaly(True):
+        if eval_only:
+            yield filter_shard_state(state)
+        else:
+            # non_none: the subdict of the state dictionary where the values
+            # are not None.
+            non_none = dict(filter_shard_state(state, shard_size))
 
-        # Now, the iteration:
-        # state is a dictionary of sequences of tensor-like but we
-        # want a sequence of dictionaries of tensors.
-        # First, unzip the dictionary into a sequence of keys and a
-        # sequence of tensor-like sequences.
-        keys, values = zip(*((k, [v_chunk for v_chunk in v_split])
-                             for k, (_, v_split) in non_none.items()))
+            # Now, the iteration:
+            # state is a dictionary of sequences of tensor-like but we
+            # want a sequence of dictionaries of tensors.
+            # First, unzip the dictionary into a sequence of keys and a
+            # sequence of tensor-like sequences.
+            keys, values = zip(*((k, [v_chunk for v_chunk in v_split])
+                                for k, (_, v_split) in non_none.items()))
 
-        # Now, yield a dictionary for each shard. The keys are always
-        # the same. values is a sequence of length #keys where each
-        # element is a sequence of length #shards. We want to iterate
-        # over the shards, not over the keys: therefore, the values need
-        # to be re-zipped by shard and then each shard can be paired
-        # with the keys.
-        for shard_tensors in zip(*values):
-            yield dict(zip(keys, shard_tensors))
+            # Now, yield a dictionary for each shard. The keys are always
+            # the same. values is a sequence of length #keys where each
+            # element is a sequence of length #shards. We want to iterate
+            # over the shards, not over the keys: therefore, the values need
+            # to be re-zipped by shard and then each shard can be paired
+            # with the keys.
+            for shard_tensors in zip(*values):
+                yield dict(zip(keys, shard_tensors))
 
-        # Assumed backprop'd
-        variables = []
-        for k, (v, v_split) in non_none.items():
-            if isinstance(v, torch.Tensor) and state[k].requires_grad:
-                variables.extend(zip(torch.split(state[k], shard_size),
-                                     [v_chunk.grad for v_chunk in v_split]))
-        inputs, grads = zip(*variables)
-        torch.autograd.backward(inputs, grads)
+            # Assumed backprop'd
+            variables = []
+            for k, (v, v_split) in non_none.items():
+                if isinstance(v, torch.Tensor) and state[k].requires_grad:
+                    variables.extend(zip(torch.split(state[k], shard_size),
+                                        [v_chunk.grad for v_chunk in v_split]))
+            inputs, grads = zip(*variables)
+            torch.autograd.backward(inputs, grads)

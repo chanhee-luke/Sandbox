@@ -84,7 +84,7 @@ class RNNLayer(nn.Module):
         hidden = None
         for t in range(time_steps):
             src_input = embedded[t]  
-            hidden = self.rnnCell(src_input, hidden)
+            hx, cx = self.rnnCell(src_input, hidden)
             outputs.append(hidden)
 
         layer_final =  hidden 
@@ -158,69 +158,78 @@ class mergeLSTMLayer(nn.Module):
     def __init__(self, token_len):
         super().__init__()
         self.token_len = token_len
-        self.lstm = nn.LSTMCell(2, 50)
+        self.lstm = nn.LSTMCell(500, 500)
 
     def forward(self, embedded, src, lengths, token_dict):
-        def packer(embeds, lengths, num):
-            """Pack words in string"""
-            packed = torch.zeros(500).cuda()
-            curr_length = 0
-            outputs = []
-            curr = []
-            for index, word in enumerate(embeds):
-                
-                curr.append(word)
+        with torch.autograd.set_detect_anomaly(True):
+            def packer(embeds, lengths, num):
+                """Pack words in string"""
+                packed = torch.zeros(500).cuda()
+                # packed = torch.zeros(500)
 
-                packed = torch.add(packed, word)
+                curr_length = 0
+                outputs = []
+                curr = []
+                for index, word in enumerate(embeds):
+                    
+                    curr.append(word)
 
-                curr_length += lengths[index]
+                    packed = torch.add(packed, word)
 
-                if index == len(embeds) - 1 or (curr_length + lengths[index + 1]) > num: 
-                    # Run through lstm here
-                    hidden = None
-                    for e in curr:
-                        hidden = self.lstm(e, hidden)
-                    packed_output =  hidden[0] 
+                    curr_length += lengths[index]
 
-                    output = torch.tensor(packed)
-                    outputs.append(packed_output)
-                    packed = torch.zeros(500).cuda()
-                    curr_length = 0
-                    curr = []
-            return outputs
+                    if index == len(embeds) - 1 or (curr_length + lengths[index + 1]) > num: 
+                        # Run through lstm here
+                        hx = torch.randn(1, 500).cuda()
+                        cx = torch.randn(1, 500).cuda()
+                        for e in curr:
+                            # print(e.size())
+                            e1 = torch.unsqueeze(e, 0)
+                            # print(e1.size())
+                            hx, cx = self.lstm(e1, (hx, cx))
+                        packed_output = hx
 
-        # Read src and merge
-        # src = [sent_length x batch_size x hidden_size]
-        # 
-        time_steps = embedded.size(0)
-        batch_size = embedded.size(1)
-        for i in range(batch_size):
-            sent_lengths = []
-            embeds = []
-            # Pack embeddings
-            for j in range(time_steps):
-                word = embedded[j][i]
-                orig_word = src[j][i]
-                if orig_word.item() == 1:
-                    continue 
-                if orig_word.item() == 0:
-                    sent_lengths.append(4)
-                else:
-                    sent_lengths.append(token_dict['src'][orig_word.item()])
-                embeds.append(word)
-            outputs = packer(embeds, sent_lengths, self.token_len)
-            # Put packed embeddings back into original embedding tensors
-            for k, packed in enumerate(outputs):
-                embedded[k][i] = packed
-            lengths[i] = len(outputs)
-            #print(lengths)
-        embedded = embedded.permute(1,0,2)
-        packed_embedded = [x for _, x in sorted(zip(lengths.tolist(),embedded), key=lambda pair: pair[0], reverse=True)]
-        packed_embedded = torch.stack(packed_embedded)
-        packed_embedded = packed_embedded.permute(1,0,2)
-        embedded = embedded.permute(1,0,2)
-        merged_lengths, _ = torch.sort(lengths, descending=True)
-        return packed_embedded, merged_lengths
+                        output = torch.tensor(packed)
+                        outputs.append(packed_output)
+                        # packed = torch.zeros(500)
+                        packed = torch.zeros(500).cuda()
+
+                        curr_length = 0
+                        curr = []
+                return outputs
+
+            # Read src and merge
+            # src = [sent_length x batch_size x hidden_size]
+            # 
+            time_steps = embedded.size(0)
+            batch_size = embedded.size(1)
+            for i in range(batch_size):
+                sent_lengths = []
+                embeds = []
+                # Pack embeddings
+                for j in range(time_steps):
+                    word = embedded[j][i]
+                    orig_word = src[j][i]
+                    if orig_word.item() == 1:
+                        continue 
+                    if orig_word.item() == 0:
+                        sent_lengths.append(4)
+                    else:
+                        sent_lengths.append(token_dict['src'][orig_word.item()])
+                    embeds.append(word)
+                outputs = packer(embeds, sent_lengths, self.token_len)
+                # Put packed embeddings back into original embedding tensors
+                for k, packed in enumerate(outputs):
+                    embedded[k][i] = packed
+                lengths[i] = len(outputs)
+                #print(lengths)
+            embedded = embedded.permute(1,0,2)
+            packed_embedded = [x for _, x in sorted(zip(lengths.tolist(),embedded), key=lambda pair: pair[0], reverse=True)]
+            packed_embedded = torch.stack(packed_embedded)
+            packed_embedded = packed_embedded.permute(1,0,2)
+            embedded = embedded.permute(1,0,2)
+            merged_lengths, _ = torch.sort(lengths, descending=True)
+            return packed_embedded, merged_lengths
 
 class RNNEncoder(EncoderBase):
     ''' 
